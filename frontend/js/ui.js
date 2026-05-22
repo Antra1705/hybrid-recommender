@@ -1,10 +1,5 @@
-// =============================================================================
-// ui.js — UI Utilities & Helpers
-// Toasts, modals, loading states, card rendering, pagination,
-// upload handler, build handler, status polling.
-// No business logic. No direct API calls except /api/status.
-// =============================================================================
-
+// state is imported read-only for rendering context (e.g. perPage, weights display).
+// ui.js never calls setState() — all writes go through the calling module.
 import { state } from './state.js';
 
 // ── Toast Notifications ───────────────────────────────────────────────────────
@@ -104,7 +99,10 @@ export function renderProductCards(items, opts = {}) {
       });
     });
     card.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') card.click();
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault(); // stop space from scrolling the page
+        card.click();
+      }
     });
   });
 }
@@ -175,7 +173,7 @@ export function bindUploadHandler(onSuccess) {
   input.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!['.csv','.json'].some(ext => file.name.endsWith(ext))) {
+    if (!['.csv','.json'].some(ext => file.name.toLowerCase().endsWith(ext))) {
       showToast('Only CSV and JSON files are supported.', 'error'); return;
     }
     setLoadingState('upload', true);
@@ -237,7 +235,7 @@ export function startStatusPoller(intervalMs = 30_000) {
 
 // ── Escape helper ─────────────────────────────────────────────────────────────
 
-function _esc(str) {
+export function escapeHtml(str) {
   return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

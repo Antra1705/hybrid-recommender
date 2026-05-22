@@ -4,9 +4,10 @@
 // =============================================================================
 
 import { state, setState, addRecentlyViewed } from './state.js';
-import { renderProductCards, setLoadingState, showToast } from './ui.js';
+import { renderProductCards, setLoadingState, showToast, escapeHtml } from './ui.js';
 import { isAuthenticated } from './auth.js';
 
+let _sliderDebounce = null;
 /** Fetch and display hybrid recommendations for a product title. */
 export async function showRecommendations(title) {
   if (!title) return;
@@ -47,12 +48,16 @@ export function initWeightSliders() {
     slider.value = state.weights[key];
     if (valEl) valEl.textContent = state.weights[key].toFixed(2);
 
-    slider.addEventListener('input', async (e) => {
-      const val = parseFloat(e.target.value);
-      setState({ weights: { ...state.weights, [key]: val } });
-      if (valEl) valEl.textContent = val.toFixed(2);
-      _persistWeights(state.weights).catch(() => {});
-      if (state.currentItem) await showRecommendations(state.currentItem);
+    slider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        setState({ weights: { ...state.weights, [key]: val } });
+        if (valEl) valEl.textContent = val.toFixed(2);
+
+        clearTimeout(_sliderDebounce);
+        _sliderDebounce = setTimeout(async () => {
+            _persistWeights(state.weights).catch(() => {});
+            if (state.currentItem) await showRecommendations(state.currentItem);
+        }, 400); // wait 400ms after user stops sliding
     });
   });
 }
@@ -68,8 +73,8 @@ export function renderRecentlyViewed() {
   }
 
   container.innerHTML = state.recentlyViewed.map(title => `
-    <div class="recent-item" data-title="${_esc(title)}" role="button" tabindex="0">
-      <span class="recent-item__title">${_esc(title)}</span>
+    <div class="recent-item" data-title="${escapeHtml(title)}" role="button" tabindex="0">
+      <span class="recent-item__title">${escapeHtml(title)}</span>
       <span class="recent-item__arrow">→</span>
     </div>
   `).join('');
@@ -77,7 +82,10 @@ export function renderRecentlyViewed() {
   container.querySelectorAll('.recent-item').forEach(el => {
     el.addEventListener('click', () => showRecommendations(el.dataset.title));
     el.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') showRecommendations(el.dataset.title);
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        showRecommendations(el.dataset.title);
+      }
     });
   });
 }
@@ -112,9 +120,4 @@ async function _persistWeights(weights) {
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(weights),
   });
-}
-
-function _esc(str) {
-  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

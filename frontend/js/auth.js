@@ -88,13 +88,22 @@ function _syncAuthUI(user) {
   if (!authBtn) return;
 
   if (user && !state.isGuest) {
+    // Fully logged in
     authBtn.style.display    = 'none';
     signOutBtn.style.display = 'inline-flex';
     if (userLabel) userLabel.textContent = user.email;
-  } else {
+  } else if (user && state.isGuest) {
+    // Guest session
     authBtn.style.display    = 'inline-flex';
+    authBtn.textContent      = 'Sign In';
     signOutBtn.style.display = 'none';
-    if (userLabel) userLabel.textContent = state.isGuest ? 'Guest' : '';
+    if (userLabel) userLabel.textContent = 'Guest';
+  } else {
+    // Logged out
+    authBtn.style.display    = 'inline-flex';
+    authBtn.textContent      = 'Sign In';
+    signOutBtn.style.display = 'none';
+    if (userLabel) userLabel.textContent = '';
   }
 }
 

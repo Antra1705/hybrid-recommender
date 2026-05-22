@@ -34,7 +34,7 @@ export async function runSearch(query, limit = 20) {
 
     setState({ searchResults: results, isSearching: false });
     renderProductCards(results, { context: 'search', query: q });
-    renderPagination(1, results.length, state.perPage, loadProducts);
+    renderPagination(1, data.total ?? results.length, state.perPage, loadProducts);
   } catch (err) {
     showToast('Search failed. Please try again.', 'error');
     console.error('[search]', err);
