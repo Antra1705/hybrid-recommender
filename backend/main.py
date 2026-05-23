@@ -8,7 +8,7 @@ import sys
 import io
 import time
 import logging
-import re
+import math
 from collections import deque, Counter
 from threading import Lock
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -26,12 +26,12 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import Depends
+from fastapi.responses import FileResponse
+from collections import Counter
 from pydantic import BaseModel
 from typing import Any, Optional
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -627,6 +627,13 @@ def dashboard(
         "model_last_trained": models.get("last_trained_at"),
     }
 
+@app.get("/api/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "model_loaded": models["ready"]
+    }
 
 # ── Search (PostgreSQL FTS) ─────────────────────────────────────────
 @app.get("/api/search")
